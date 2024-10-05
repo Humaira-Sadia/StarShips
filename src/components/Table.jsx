@@ -3,32 +3,28 @@ import Pagination from "./Pagination";
 
 const Table = () => {
   const [starships, setStarships] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const [nextPage, setNextPage] = useState(null);
+  const [previousPage, setPreviousPage] = useState(null); 
+  const [loading, setLoading] = useState(true); 
 
-  useEffect(() => {
-    // Fetching starships data from the SWAPI API
-    fetch("https://swapi.dev/api/starships")
+  // Fetch starships data from the provided URL
+  const fetchStarships = (url) => {
+    setLoading(true);
+    fetch(url)
       .then((response) => response.json())
       .then((data) => {
         setStarships(data.results);
+        setNextPage(data.next); 
+        setPreviousPage(data.previous); 
       })
-      .catch((error) => console.error("Error fetching starships:", error));
-  }, []);
-
-  // Calculate total pages
-  const totalPages = Math.ceil(starships.length / itemsPerPage);
-
-  // Current page data
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentStarships = starships.slice(
-    startIndex,
-    startIndex + itemsPerPage
-  );
-
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
+      .catch((error) => console.error("Error fetching starships:", error))
+      .finally(() => setLoading(false));
   };
+
+  // Fetch starships when the component mounts
+  useEffect(() => {
+    fetchStarships("https://swapi.dev/api/starships/");
+  }, []);
 
   return (
     <div className="md:mt-16 text-[15px] sm:text-xl tracking-wider flex flex-col justify-center items-center relative">
@@ -36,7 +32,7 @@ const Table = () => {
         Star<span className="italic text-yellow-400">ships</span>
       </h1>
       <div className="overflow-x-auto w-full">
-        <table className="min-w-full table-auto rounded-lg border border-gray-300  bg-black">
+        <table className="min-w-full table-auto rounded-lg border border-gray-300 bg-black">
           <thead className="text-[15px] sm:text-2xl cursor-pointer italic">
             <tr>
               <th className="border border-gray-300 px-2 py-4 sm:px-4 rounded-tl-lg rounded-tr-lg">
@@ -51,8 +47,22 @@ const Table = () => {
             </tr>
           </thead>
           <tbody className="cursor-pointer">
-            {currentStarships.length > 0 ? (
-              currentStarships.map((starship, index) => (
+            {loading ? (
+              <tr>
+                <td
+                  className="border border-gray-300 p-6 text-center"
+                  colSpan="3"
+                >
+                  <div className="flex flex-row justify-center text-center items-center gap-5">
+                    <div className="loader w-10 h-10 border-4 border-t-transparent rounded-full animate-spin"></div>
+                    <h1 className="text-2xl font-semibold animate-pulse">
+                      Loading starships...
+                    </h1>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              starships.map((starship, index) => (
                 <tr
                   key={starship.name}
                   className={
@@ -72,20 +82,6 @@ const Table = () => {
                   </td>
                 </tr>
               ))
-            ) : (
-              <tr>
-                <td
-                  className="border border-gray-300 p-6 text-center"
-                  colSpan="3"
-                >
-                  <div className="flex flex-row justify-center text-center items-center gap-5">
-                    <div className="loader w-10 h-10 border-4 border-t-transparent rounded-full animate-spin" ></div>
-                    <h1 className="text-2xl font-semibold animate-pulse">
-                      Loading starships...
-                    </h1>
-                  </div>
-                </td>
-              </tr>
             )}
           </tbody>
         </table>
@@ -93,9 +89,9 @@ const Table = () => {
 
       {/* Pagination */}
       <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={handlePageChange}
+        nextPage={nextPage}
+        previousPage={previousPage}
+        onPageChange={fetchStarships}
       />
     </div>
   );
